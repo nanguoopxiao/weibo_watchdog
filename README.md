@@ -201,3 +201,7 @@ Linux 可以用 systemd 跑：
 ```bash
 /opt/weibo-monitor/weibo-monitor bot -config /opt/weibo-monitor/config.json
 ```
+
+## License
+
+MIT License. See [LICENSE](LICENSE).
