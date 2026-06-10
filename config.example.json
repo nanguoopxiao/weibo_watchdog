@@ -1,0 +1,27 @@
+{
+  "interval": "10m",
+  "data_dir": "data",
+  "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/126.0 Safari/537.36",
+  "network": {
+    "timeout": "20s",
+    "ip_family": "auto",
+    "proxy": ""
+  },
+  "telegram_bot": {
+    "enabled": true,
+    "bot_token_env": "TELEGRAM_BOT_TOKEN",
+    "poll_timeout": "25s",
+    "default_recent_limit": 20,
+    "default_lookback_days": 0,
+    "default_max_pages": 3,
+    "include_reposts": true
+  },
+  "accounts": [],
+  "notify": {
+    "enabled": false,
+    "on_first_check": false,
+    "on_recover": true,
+    "on_unknown": false,
+    "channels": []
+  }
+}

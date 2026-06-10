@@ -1,0 +1,6 @@
+.gocache/
+data/
+config.json
+weibo-monitor
+weibo-monitor.exe
+weibo-monitor-*
