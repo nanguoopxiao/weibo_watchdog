@@ -3,7 +3,7 @@
   "data_dir": "data",
   "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/126.0 Safari/537.36",
   "database": {
-    "type": "json",
+    "type": "postgres",
     "dsn_env": "WEIBO_WATCHDOG_DATABASE_URL"
   },
   "network": {

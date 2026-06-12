@@ -34,13 +34,16 @@ func (n Notifier) ShouldNotify(record CheckRecord, previousFound bool) bool {
 	if record.PreviousStatus == record.Status {
 		return false
 	}
-	if !n.cfg.OnUnknown && isUnknownLike(record.Status) {
-		return false
+	if record.Status == StatusPublicInvisible {
+		return true
 	}
-	if !n.cfg.OnRecover && isVisibleLike(record.Status) {
-		return false
+	if isVisibleLike(record.Status) {
+		return n.cfg.OnRecover && record.PreviousStatus == StatusPublicInvisible
 	}
-	return true
+	if isUnknownLike(record.Status) {
+		return n.cfg.OnUnknown
+	}
+	return false
 }
 
 func (n Notifier) Notify(record CheckRecord) error {
@@ -212,7 +215,7 @@ func notificationBody(record CheckRecord) string {
 	}
 	if record.AccountUID != "" {
 		account := record.AccountUID
-		if record.AccountName != "" {
+		if record.AccountName != "" && record.AccountName != record.AccountUID {
 			account = record.AccountName + "(" + record.AccountUID + ")"
 		}
 		lines = append(lines, "账号: "+account)

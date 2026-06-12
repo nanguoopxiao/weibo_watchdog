@@ -385,7 +385,7 @@ func shouldNotifyBotRecord(cfg Config, record CheckRecord, previousFound bool) b
 		return true
 	}
 	if isVisibleLike(record.Status) {
-		return cfg.Notify.OnRecover
+		return cfg.Notify.OnRecover && record.PreviousStatus == StatusPublicInvisible
 	}
 	if isUnknownLike(record.Status) {
 		return cfg.Notify.OnUnknown

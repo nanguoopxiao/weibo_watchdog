@@ -16,10 +16,17 @@ type Config struct {
 	Interval    string            `json:"interval"`
 	DataDir     string            `json:"data_dir"`
 	UserAgent   string            `json:"user_agent"`
+	Database    DatabaseConfig    `json:"database"`
 	Network     NetworkConfig     `json:"network"`
 	Accounts    []Account         `json:"accounts"`
 	TelegramBot TelegramBotConfig `json:"telegram_bot"`
 	Notify      NotifyConfig      `json:"notify"`
+}
+
+type DatabaseConfig struct {
+	Type   string `json:"type"`
+	DSN    string `json:"dsn"`
+	DSNEnv string `json:"dsn_env"`
 }
 
 type NetworkConfig struct {

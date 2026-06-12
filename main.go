@@ -33,6 +33,10 @@ func main() {
 		if err := runSendTest(os.Args[2:]); err != nil {
 			fatal(err)
 		}
+	case "db-check":
+		if err := runDBCheck(os.Args[2:]); err != nil {
+			fatal(err)
+		}
 	case "help", "-h", "--help":
 		usage()
 	default:
@@ -85,6 +89,21 @@ func runSendTest(args []string) error {
 	return notifier.Notify(record)
 }
 
+func runDBCheck(args []string) error {
+	cfg, _, store, _, err := setup(args)
+	if err != nil {
+		return err
+	}
+	if store.pg == nil {
+		fmt.Printf("database backend: %s\n", cfg.Database.Type)
+		fmt.Println("json backend does not need a database connection")
+		return nil
+	}
+	fmt.Println("database backend: postgres")
+	fmt.Println("connection and schema migration: ok")
+	return nil
+}
+
 func setup(args []string) (Config, *http.Client, *Store, Notifier, error) {
 	fs := flag.NewFlagSet("weibo-monitor", flag.ContinueOnError)
 	configPath := fs.String("config", "config.json", "path to config JSON")
@@ -111,7 +130,7 @@ func setup(args []string) (Config, *http.Client, *Store, Notifier, error) {
 		dataDir = filepath.Join(base, dataDir)
 	}
 
-	store, err := NewStore(dataDir)
+	store, err := NewStoreForConfig(cfg, dataDir)
 	if err != nil {
 		return Config{}, nil, nil, Notifier{}, err
 	}
@@ -126,6 +145,7 @@ Usage:
   weibo-monitor run [-config config.json]        keep checking by interval
   weibo-monitor bot [-config config.json]        run Telegram bot subscription service
   weibo-monitor send-test [-config config.json]  send a test notification
+  weibo-monitor db-check [-config config.json]   check configured storage backend
 
 Config defaults to ./config.json.`)
 }

@@ -68,6 +68,38 @@ func TestShouldNotifyStatusChange(t *testing.T) {
 	}
 }
 
+func TestShouldNotifyIgnoresUnknownToVisible(t *testing.T) {
+	notifier := NewNotifier(NotifyConfig{
+		Enabled:   true,
+		OnRecover: true,
+		OnUnknown: false,
+	}, nil)
+
+	ok := notifier.ShouldNotify(CheckRecord{
+		Status:         StatusPublicVisible,
+		PreviousStatus: StatusUnknown,
+	}, true)
+	if ok {
+		t.Fatal("ShouldNotify() = true for UNKNOWN -> PUBLIC_VISIBLE, want false")
+	}
+}
+
+func TestShouldNotifyInvisibleToVisibleRecovery(t *testing.T) {
+	notifier := NewNotifier(NotifyConfig{
+		Enabled:   true,
+		OnRecover: true,
+		OnUnknown: false,
+	}, nil)
+
+	ok := notifier.ShouldNotify(CheckRecord{
+		Status:         StatusPublicVisible,
+		PreviousStatus: StatusPublicInvisible,
+	}, true)
+	if !ok {
+		t.Fatal("ShouldNotify() = false for PUBLIC_INVISIBLE -> PUBLIC_VISIBLE, want true")
+	}
+}
+
 func TestTelegramNotifierReadsEnv(t *testing.T) {
 	t.Setenv("TELEGRAM_BOT_TOKEN_TEST", "token-from-env")
 	var gotPath string

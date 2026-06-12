@@ -45,6 +45,12 @@ func applyDefaults(cfg *Config) {
 	if strings.TrimSpace(cfg.DataDir) == "" {
 		cfg.DataDir = defaultDataDir
 	}
+	if strings.TrimSpace(cfg.Database.Type) == "" {
+		cfg.Database.Type = "json"
+	}
+	if strings.TrimSpace(cfg.Database.DSNEnv) == "" {
+		cfg.Database.DSNEnv = "WEIBO_WATCHDOG_DATABASE_URL"
+	}
 	if strings.TrimSpace(cfg.UserAgent) == "" {
 		cfg.UserAgent = defaultUA
 	}
@@ -109,6 +115,12 @@ func validateConfig(cfg Config) error {
 	}
 	if _, err := time.ParseDuration(cfg.TelegramBot.PollTimeout); err != nil {
 		return fmt.Errorf("invalid telegram_bot.poll_timeout %q: %w", cfg.TelegramBot.PollTimeout, err)
+	}
+
+	switch strings.ToLower(cfg.Database.Type) {
+	case "json", "postgres", "postgresql":
+	default:
+		return fmt.Errorf("database.type must be json or postgres, got %q", cfg.Database.Type)
 	}
 
 	switch strings.ToLower(cfg.Network.IPFamily) {

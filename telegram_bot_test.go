@@ -91,3 +91,29 @@ func TestTelegramStartThenUIDSubscription(t *testing.T) {
 		t.Fatalf("tracked = %+v", tracked)
 	}
 }
+
+func TestShouldNotifyBotRecordIgnoresUnknownToVisible(t *testing.T) {
+	cfg := Config{
+		Notify: NotifyConfig{OnRecover: true, OnUnknown: false},
+	}
+	ok := shouldNotifyBotRecord(cfg, CheckRecord{
+		Status:         StatusPublicVisible,
+		PreviousStatus: StatusUnknown,
+	}, true)
+	if ok {
+		t.Fatal("shouldNotifyBotRecord() = true for UNKNOWN -> PUBLIC_VISIBLE, want false")
+	}
+}
+
+func TestShouldNotifyBotRecordInvisibleToVisibleRecovery(t *testing.T) {
+	cfg := Config{
+		Notify: NotifyConfig{OnRecover: true, OnUnknown: false},
+	}
+	ok := shouldNotifyBotRecord(cfg, CheckRecord{
+		Status:         StatusPublicVisible,
+		PreviousStatus: StatusPublicInvisible,
+	}, true)
+	if !ok {
+		t.Fatal("shouldNotifyBotRecord() = false for PUBLIC_INVISIBLE -> PUBLIC_VISIBLE, want true")
+	}
+}

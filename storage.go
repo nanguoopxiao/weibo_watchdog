@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 	"time"
 )
 
@@ -17,6 +18,7 @@ type Store struct {
 	logPath   string
 	state     map[string]StateEntry
 	botState  BotState
+	pg        *PostgresStore
 }
 
 func NewStore(dataDir string) (*Store, error) {
@@ -40,12 +42,32 @@ func NewStore(dataDir string) (*Store, error) {
 	return store, nil
 }
 
+func NewStoreForConfig(cfg Config, dataDir string) (*Store, error) {
+	switch strings.ToLower(cfg.Database.Type) {
+	case "postgres", "postgresql":
+		dsn := resolveConfigValue(cfg.Database.DSN, cfg.Database.DSNEnv)
+		pg, err := NewPostgresStore(dsn)
+		if err != nil {
+			return nil, err
+		}
+		return &Store{pg: pg}, nil
+	default:
+		return NewStore(dataDir)
+	}
+}
+
 func (s *Store) Previous(target Target) (StateEntry, bool) {
+	if s.pg != nil {
+		return s.pg.Previous(target)
+	}
 	entry, ok := s.state[targetKey(target)]
 	return entry, ok
 }
 
 func (s *Store) TrackDiscovered(post DiscoveredPost, now time.Time) (StateEntry, bool) {
+	if s.pg != nil {
+		return s.pg.TrackDiscovered(post, now)
+	}
 	key := postKey(post.AccountUID, post.MID, post.ID, post.URL)
 	existing, found := s.state[key]
 	if !found {
@@ -80,6 +102,9 @@ func (s *Store) TrackDiscovered(post DiscoveredPost, now time.Time) (StateEntry,
 }
 
 func (s *Store) TrackedPosts(accounts []Account) []StateEntry {
+	if s.pg != nil {
+		return s.pg.TrackedPosts(accounts)
+	}
 	allowed := map[string]bool{}
 	for _, account := range accounts {
 		allowed[account.UID] = true
@@ -111,10 +136,16 @@ func (s *Store) TrackedPosts(accounts []Account) []StateEntry {
 }
 
 func (s *Store) BotUpdateOffset() int64 {
+	if s.pg != nil {
+		return s.pg.BotUpdateOffset()
+	}
 	return s.botState.UpdateOffset
 }
 
 func (s *Store) SetBotUpdateOffset(offset int64) error {
+	if s.pg != nil {
+		return s.pg.SetBotUpdateOffset(offset)
+	}
 	if offset > s.botState.UpdateOffset {
 		s.botState.UpdateOffset = offset
 		return s.saveBotState()
@@ -123,6 +154,9 @@ func (s *Store) SetBotUpdateOffset(offset int64) error {
 }
 
 func (s *Store) UpsertSubscription(sub Subscription) error {
+	if s.pg != nil {
+		return s.pg.UpsertSubscription(sub)
+	}
 	if s.botState.Subscriptions == nil {
 		s.botState.Subscriptions = map[string]Subscription{}
 	}
@@ -141,11 +175,17 @@ func (s *Store) UpsertSubscription(sub Subscription) error {
 }
 
 func (s *Store) Subscription(chatID string) (Subscription, bool) {
+	if s.pg != nil {
+		return s.pg.Subscription(chatID)
+	}
 	sub, ok := s.botState.Subscriptions[chatID]
 	return sub, ok
 }
 
 func (s *Store) DeleteSubscription(chatID string) error {
+	if s.pg != nil {
+		return s.pg.DeleteSubscription(chatID)
+	}
 	if s.botState.Subscriptions == nil {
 		return nil
 	}
@@ -154,6 +194,9 @@ func (s *Store) DeleteSubscription(chatID string) error {
 }
 
 func (s *Store) Subscriptions() []Subscription {
+	if s.pg != nil {
+		return s.pg.Subscriptions()
+	}
 	var subs []Subscription
 	for _, sub := range s.botState.Subscriptions {
 		subs = append(subs, sub)
@@ -168,6 +211,9 @@ func (s *Store) Subscriptions() []Subscription {
 }
 
 func (s *Store) AccountsFromSubscriptions() []Account {
+	if s.pg != nil {
+		return s.pg.AccountsFromSubscriptions()
+	}
 	byUID := map[string]Account{}
 	for _, sub := range s.botState.Subscriptions {
 		if sub.UID == "" {
@@ -208,6 +254,9 @@ func (s *Store) AccountsFromSubscriptions() []Account {
 }
 
 func (s *Store) ChatIDsForUID(uid string) []string {
+	if s.pg != nil {
+		return s.pg.ChatIDsForUID(uid)
+	}
 	var chatIDs []string
 	for _, sub := range s.botState.Subscriptions {
 		if sub.UID == uid {
@@ -219,6 +268,9 @@ func (s *Store) ChatIDsForUID(uid string) []string {
 }
 
 func (s *Store) SaveCheck(record CheckRecord) error {
+	if s.pg != nil {
+		return s.pg.SaveCheck(record)
+	}
 	if err := s.appendLog(record); err != nil {
 		return err
 	}
@@ -248,6 +300,9 @@ func (s *Store) SaveCheck(record CheckRecord) error {
 }
 
 func (s *Store) SaveState() error {
+	if s.pg != nil {
+		return nil
+	}
 	return s.saveState()
 }
 
@@ -374,6 +429,9 @@ func postKey(uid, mid, id, url string) string {
 
 func targetNameFromPost(post DiscoveredPost) string {
 	label := firstNonEmpty(post.AccountName, post.AccountUID)
+	if label == post.AccountUID {
+		label = ""
+	}
 	text := snippet(post.Text, 32)
 	if text == "" {
 		text = firstNonEmpty(post.MID, post.ID, post.BID)

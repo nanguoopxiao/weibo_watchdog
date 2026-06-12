@@ -39,6 +39,10 @@ Copy-Item config.example.json config.json
 ```json
 {
   "interval": "10m",
+  "database": {
+    "type": "json",
+    "dsn_env": "WEIBO_WATCHDOG_DATABASE_URL"
+  },
   "telegram_bot": {
     "enabled": true,
     "bot_token_env": "TELEGRAM_BOT_TOKEN",
@@ -50,6 +54,22 @@ Copy-Item config.example.json config.json
   },
   "accounts": []
 }
+```
+
+默认 `database.type=json`，会继续使用本地 `data/*.json`。如果要用 PostgreSQL：
+
+```json
+"database": {
+  "type": "postgres",
+  "dsn_env": "WEIBO_WATCHDOG_DATABASE_URL"
+}
+```
+
+服务器上可以这样加载连接串：
+
+```bash
+source /root/weibo_watchdog_db.env
+./weibo-monitor-linux-arm64 db-check -config config.json
 ```
 
 不要把 Telegram token 写进配置文件。用环境变量：
@@ -88,7 +108,21 @@ Bot 支持：
 - `data/state.json`：微博追踪器状态，包含 UID、微博链接、正文片段、发布时间、最新状态
 - `data/checks.jsonl`：每次检测历史，一行一个 JSON
 
-这个结构足够支撑个人和小范围多人使用。之后如果用户量变大，再把这三类数据迁到 SQLite 会很顺。
+这个结构足够支撑个人和小范围多人使用。之后如果用户量变大，可以切到 PostgreSQL。
+
+也可以切到 PostgreSQL。程序会自动建表和迁移 schema：
+
+- `app_state`：Telegram update offset 等键值状态
+- `subscriptions`：`chat_id -> weibo_uid` 订阅关系
+- `weibo_posts`：微博追踪器最新状态
+- `post_checks`：每次检测历史
+
+联调命令：
+
+```bash
+source /root/weibo_watchdog_db.env
+./weibo-monitor-linux-arm64 db-check -config config.json
+```
 
 ## 本地账号模式
 
